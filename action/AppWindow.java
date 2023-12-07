@@ -11,7 +11,11 @@ public class AppWindow extends BaseWindow {
     private ResultSet rs = null;
 
     private JPanel jContentPane = null;
-    private JButton jButton = null;
+
+    // ボタン
+    private JButton jButtonKakunin = null;
+    private JButton jButtonCancel = null;
+    private JButton jButtonUpdate = null;
 
     // 社員コード
     private JLabel lblScode = null;
@@ -40,18 +44,19 @@ public class AppWindow extends BaseWindow {
     // *****************************************************
     // ボタン作成とクリックイベント
     // *****************************************************
-    private JButton getJButton() {
-        if (jButton == null) {
-            jButton = new JButton();
+    private JButton getJButtonKakunin() {
+        if (jButtonKakunin == null) {
+            jButtonKakunin = new JButton();
             // メインウインドウに対して、100x22 のボタンを追加
-            jButton.setBounds( 250, 30-3, 100, 22 );
-            jButton.setText("実行");
-            jButton.addActionListener(new java.awt.event.ActionListener() {
+            jButtonKakunin.setBounds( 250, 30-3, 100, 22 );
+            jButtonKakunin.setText("確認");
+            jButtonKakunin.addActionListener(new java.awt.event.ActionListener() {
                 public void actionPerformed(java.awt.event.ActionEvent e) {
 
                     try {
                         conn = DriverManager.getConnection(
-                            "jdbc:mysql://localhost/lightbox?user=root&password=&characterEncoding=UTF-8"
+                            // "jdbc:mysql://localhost/lightbox?user=root&password=&characterEncoding=UTF-8"
+                            "jdbc:sqlite:lightbox.sqlite3"
                         );
 
                         // ステートメント
@@ -70,7 +75,6 @@ public class AppWindow extends BaseWindow {
                         // 社員名
                         String sFuri = rs.getString("フリガナ");
                         jFuri.setText(sFuri);
-
 
                         // 整数
                         int seibetu = rs.getInt("性別");
@@ -97,15 +101,141 @@ public class AppWindow extends BaseWindow {
                     }
 
                     // 編集状態の切り替え
+                    // 第一会話
                     jScode.setEditable(false);
+                    jButtonKakunin.setEnabled(false);
+
+                    // 第二会話
                     jSname.setEditable(true);
                     jFuri.setEditable(true);
                     genderComboBox.setEnabled(true);
+                    jButtonCancel.setEnabled(true);
+                    jButtonUpdate.setEnabled(true);
+
 
                 }
             });
         }
-        return jButton;
+        return jButtonKakunin;
+    }
+
+    private JButton getJButtonCancel() {
+        if (jButtonCancel == null) {
+            jButtonCancel = new JButton();
+            jButtonCancel.setEnabled(false);
+            // メインウインドウに対して、100x22 のボタンを追加
+            jButtonCancel.setBounds( 250, 30+50+30+30+30, 100, 22 );
+            jButtonCancel.setText("キャンセル");
+            jButtonCancel.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+
+                    // 編集状態の切り替え
+                    // 第一会話
+                    jScode.setEditable(true);
+                    jButtonKakunin.setEnabled(true);
+
+                    // 第二会話
+                    jSname.setEditable(false);
+                    jFuri.setEditable(false);
+                    genderComboBox.setEnabled(false);
+                    jButtonCancel.setEnabled(false);
+                    jButtonUpdate.setEnabled(false);
+
+                    jSname.setText("");
+                    jFuri.setText("");
+                    // 0 でコンボボックス先頭
+                    genderComboBox.setSelectedIndex(0);
+
+                    // フォーカス変更
+                    jScode.requestFocus();
+
+                }
+            });
+        }
+        return jButtonCancel;
+    }
+
+    private JButton getJButtonUpdate() {
+        if (jButtonUpdate == null) {
+            jButtonUpdate = new JButton();
+            jButtonUpdate.setEnabled(false);
+            // メインウインドウに対して、100x22 のボタンを追加
+            jButtonUpdate.setBounds( 60, 30+50+30+30+30, 100, 22 );
+            jButtonUpdate.setText("更新");
+            jButtonUpdate.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent e) {
+
+
+                    try {
+                        conn = DriverManager.getConnection(
+                            // "jdbc:mysql://localhost/lightbox?user=root&password=&characterEncoding=UTF-8"
+                            "jdbc:sqlite:lightbox.sqlite3"
+                        );
+
+                        // ステートメント
+                        stmt = conn.createStatement();
+                        // SQL 実行
+                        String sCode = jScode.getText();
+                        // rs = stmt.executeQuery("select * from 社員マスタ where 社員コード = '" + sCode + "'");
+
+                        // 一行取り出し
+                        // rs.next();
+
+                        // 社員名
+                        String sName = jSname.getText();
+
+                        // 社員名
+                        String sFuri = jFuri.getText();
+
+                        // 性別の処理
+                        Object targetGender = genderComboBox.getSelectedItem();
+                        String sSeibetu = targetGender.toString();
+                        if ( sSeibetu.equals("男性") ) {
+                            sSeibetu = "0";
+                        }
+                        else {
+                            sSeibetu = "1";
+                        }
+
+                        String sql = "UPDATE 社員マスタ SET 氏名 = '"+ sName +"', フリガナ = '"+ sFuri +"', 性別 = " + sSeibetu + " WHERE 社員コード = '" + sCode + "'";
+                        System.out.println(sql);
+
+                        stmt.executeUpdate(sql);
+
+                        stmt.close();
+                        conn.close();
+
+                    }
+                    catch (Exception ex) {
+                        System.out.println( ex.getMessage() );
+                        ex.printStackTrace();
+                    }
+
+
+                    // 編集状態の切り替え
+                    // 第一会話
+                    jScode.setEditable(true);
+                    jButtonKakunin.setEnabled(true);
+
+                    // 第二会話
+                    jSname.setEditable(false);
+                    jFuri.setEditable(false);
+                    genderComboBox.setEnabled(false);
+                    jButtonCancel.setEnabled(false);
+                    jButtonUpdate.setEnabled(false);
+
+                    jSname.setText("");
+                    jFuri.setText("");
+                    // 0 でコンボボックス先頭
+                    genderComboBox.setSelectedIndex(0);
+
+                    // フォーカス変更
+                    jScode.requestFocus();
+
+                }
+            });
+        }
+        return jButtonUpdate;
     }
 
     // *****************************************************
@@ -145,7 +275,11 @@ public class AppWindow extends BaseWindow {
         if (jContentPane == null) {
             jContentPane = new JPanel();
             jContentPane.setLayout(null);
-            jContentPane.add(getJButton(), null);
+
+            // 確認ボタンを画面に追加
+            jContentPane.add(getJButtonKakunin(), null);
+            jContentPane.add(getJButtonCancel(), null);
+            jContentPane.add(getJButtonUpdate(), null);
 
             lblScode = new JLabel("社員コード");
             lblScode.setBounds(60, 30, 80, 19);
